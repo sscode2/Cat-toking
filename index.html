@@ -1,0 +1,693 @@
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Talking Rabbit</title>
+    <style>
+        /* --- CSS VARIABLES & RESET --- */
+        :root {
+            --primary-pink: #ff69b4;
+            --dark-pink: #ff1493;
+            --purple: #a78bfa;
+            --dark-purple: #8b5cf6;
+            --yellow: #fbbf24;
+            --orange: #f59e0b;
+            --cyan: #22d3ee;
+            --font-kids: 'Comic Sans MS', 'Chalkboard SE', 'cursive', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: var(--font-kids);
+            background-color: #000;
+        }
+
+        /* --- SCREENS --- */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        #welcome-screen {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            z-index: 10;
+        }
+
+        #main-app {
+            background: linear-gradient(to bottom, #a8edea 0%, #fed6e3 100%);
+            display: none;
+            z-index: 5;
+        }
+
+        /* --- WELCOME SCREEN STYLES --- */
+        .welcome-img {
+            width: 90%;
+            max-width: 400px;
+            border-radius: 30px;
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .play-btn {
+            margin-top: 40px;
+            padding: 15px 60px;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 60px;
+            background: linear-gradient(to bottom, var(--primary-pink), var(--dark-pink));
+            box-shadow: 0 10px 20px rgba(255, 20, 147, 0.4), inset 0 -5px 0 rgba(0,0,0,0.2);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 105, 180, 0.7); }
+            50% { transform: scale(1.08); box-shadow: 0 0 0 20px rgba(255, 105, 180, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 105, 180, 0); }
+        }
+
+        /* --- VIDEO BACKGROUNDS --- */
+        .video-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        video {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        video.active {
+            opacity: 1;
+        }
+
+        /* --- TAP ZONES --- */
+        .tap-zone {
+            position: absolute;
+            z-index: 100;
+            /* background: rgba(255,0,0,0.2); /* For debugging */
+        }
+
+        #head-zone {
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+        }
+
+        #body-zone {
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 200px;
+            border-radius: 50%;
+        }
+
+        #feet-zone {
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 100px;
+            border-radius: 50% / 100%;
+        }
+
+        /* --- CONTROLS --- */
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            z-index: 200;
+        }
+
+        .btn-circle {
+            border: 6px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 35px;
+            cursor: pointer;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2), inset 0 4px 4px rgba(255,255,255,0.3);
+            transition: transform 0.1s;
+        }
+
+        .btn-circle:active { transform: scale(0.9); }
+
+        .laugh-btn { width: 80px; height: 80px; background: linear-gradient(var(--yellow), var(--orange)); border-bottom-color: var(--orange); }
+        .music-btn { width: 80px; height: 80px; background: linear-gradient(var(--purple), var(--dark-purple)); border-bottom-color: var(--dark-purple); }
+        
+        .mic-btn { 
+            width: 100px; height: 100px; 
+            background: linear-gradient(var(--primary-pink), var(--dark-pink)); 
+            border-bottom-color: var(--dark-pink);
+            position: relative;
+        }
+
+        /* CSS Mic Icon */
+        .mic-icon {
+            width: 20px;
+            height: 35px;
+            background: white;
+            border-radius: 10px;
+            position: relative;
+        }
+        .mic-icon::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: -8px;
+            width: 30px;
+            height: 15px;
+            border: 3px solid white;
+            border-top: 0;
+            border-radius: 0 0 20px 20px;
+        }
+        .mic-icon::before {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 8px;
+            background: white;
+        }
+
+        /* --- STATUS BADGE --- */
+        #status-badge {
+            position: absolute;
+            top: 30px;
+            padding: 10px 30px;
+            background: linear-gradient(to right, #8b5cf6, #d946ef);
+            color: white;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 300;
+        }
+
+        /* --- DIALOG --- */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .dialog {
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+            padding: 30px;
+            border-radius: 30px;
+            text-align: center;
+            color: white;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .dialog-btns {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .dialog-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 20px;
+            font-family: var(--font-kids);
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* --- ANIMATIONS & PARTICLES --- */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 500;
+            font-size: 24px;
+            animation: floatUpFade 1.5s forwards ease-out;
+        }
+
+        @keyframes floatUpFade {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+        }
+
+        .falling-emoji {
+            position: absolute;
+            top: -50px;
+            z-index: 400;
+            font-size: 30px;
+            animation: fall 4s linear forwards;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0) rotate(-1deg); }
+            20%, 80% { transform: translate3d(4px, 0, 0) rotate(2deg); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0) rotate(-2deg); }
+            40%, 60% { transform: translate3d(6px, 0, 0) rotate(1deg); }
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-animation {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        /* Recording & Speaking States */
+        .pulse-purple { animation: pulse-purple 1s infinite; background: #9333ea !important; }
+        @keyframes pulse-purple {
+            0% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(147, 51, 234, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); }
+        }
+
+        .glow-yellow { animation: glow-yellow 1s infinite; background: #fbbf24 !important; }
+        @keyframes glow-yellow {
+            0%, 100% { box-shadow: 0 0 5px #fbbf24; }
+            50% { box-shadow: 0 0 25px #fbbf24; }
+        }
+
+        /* --- MOBILE ADAPTATION --- */
+        @media (max-width: 600px) {
+            .btn-circle { width: 70px; height: 70px; font-size: 30px; }
+            .mic-btn { width: 85px; height: 85px; }
+            .welcome-img { width: 320px; }
+        }
+
+        @media (max-width: 400px) {
+            .btn-circle { width: 60px; height: 60px; font-size: 25px; }
+            .mic-btn { width: 75px; height: 75px; }
+            .welcome-img { width: 260px; }
+            .controls { gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="screen">
+        <img src="tom_welcome.jpg" alt="Rabbit" class="welcome-img" id="welcome-img">
+        <button class="play-btn" id="play-btn">▶ Play</button>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="main-app" class="screen">
+        <div id="status-badge">Rabbit is ready!</div>
+
+        <div class="video-container">
+            <video id="vid-idle" src="tom_standing.mp4" loop playsinline muted preload="auto" class="active"></video>
+            <video id="vid-listen" src="tom_listing.mp4" loop playsinline muted preload="auto"></video>
+            <video id="vid-talk" src="tom_talking.mp4" loop playsinline muted preload="auto"></video>
+            <video id="vid-laugh" src="laughing.mp4" loop playsinline muted preload="auto"></video>
+            <video id="vid-music" src="music.mp4" loop playsinline muted preload="auto"></video>
+        </div>
+
+        <!-- Tap Zones -->
+        <div id="head-zone" class="tap-zone"></div>
+        <div id="body-zone" class="tap-zone"></div>
+        <div id="feet-zone" class="tap-zone"></div>
+
+        <div class="controls">
+            <div class="btn-circle laugh-btn" id="laugh-btn">😄</div>
+            <div class="btn-circle mic-btn" id="mic-btn">
+                <div class="mic-icon"></div>
+            </div>
+            <div class="btn-circle music-btn" id="music-btn">🎵</div>
+        </div>
+    </div>
+
+    <!-- Exit Dialog -->
+    <div id="exit-overlay" class="overlay">
+        <div class="dialog">
+            <h3>Do you want to exit?</h3>
+            <div class="dialog-btns">
+                <button class="dialog-btn" style="background: var(--primary-pink); color: white;" id="exit-yes">Yes</button>
+                <button class="dialog-btn" style="background: var(--cyan); color: white;" id="exit-no">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="audio-laugh" src="laughing.wav" preload="auto"></audio>
+    <audio id="audio-music" src="music.wav" preload="auto"></audio>
+
+    <script>
+        /**
+         * APP STATE MANAGEMENT
+         */
+        const AppState = {
+            WELCOME: 'welcome',
+            IDLE: 'idle',
+            LISTENING: 'listening',
+            TALKING: 'talking',
+            LAUGHING: 'laughing',
+            MUSIC: 'music'
+        };
+
+        let currentState = AppState.WELCOME;
+        let audioPlayCount = 0;
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioContext;
+
+        const statusBadge = document.getElementById('status-badge');
+        const videos = {
+            idle: document.getElementById('vid-idle'),
+            listening: document.getElementById('vid-listen'),
+            talking: document.getElementById('vid-talk'),
+            laughing: document.getElementById('vid-laugh'),
+            music: document.getElementById('vid-music')
+        };
+
+        /**
+         * INITIALIZATION
+         */
+        document.getElementById('play-btn').addEventListener('click', function(e) {
+            createRipple(e);
+            setTimeout(() => {
+                startApp();
+            }, 500);
+        });
+
+        function startApp() {
+            document.getElementById('welcome-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('welcome-screen').style.display = 'none';
+                document.getElementById('main-app').style.display = 'flex';
+                currentState = AppState.IDLE;
+                playVideo('idle');
+                showStatus("Rabbit is ready!");
+                
+                // Initialize Audio Context on user gesture
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // History API for Android Back Button
+                window.history.pushState({page: 'main'}, 'Main');
+            }, 500);
+        }
+
+        /**
+         * CORE FUNCTIONS
+         */
+        function switchState(newState) {
+            currentState = newState;
+            // Stop all video-based loops unless it's the target
+            Object.keys(videos).forEach(key => {
+                if(key !== newState) {
+                    videos[key].classList.remove('active');
+                    videos[key].pause();
+                }
+            });
+
+            if(videos[newState]) {
+                videos[newState].classList.add('active');
+                videos[newState].play().catch(e => console.log("Video play blocked", e));
+            }
+        }
+
+        function playVideo(key) {
+            switchState(key);
+        }
+
+        function showStatus(msg) {
+            statusBadge.innerText = msg;
+            statusBadge.style.opacity = '1';
+            setTimeout(() => {
+                if(currentState === AppState.IDLE) statusBadge.style.opacity = '0';
+            }, 3000);
+        }
+
+        function vibrate(ms = 50) {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        }
+
+        /**
+         * TAP INTERACTIONS
+         */
+        const tapZones = ['head-zone', 'body-zone', 'feet-zone'];
+        const tickleMessages = ["Hehe! That tickles!", "Ha ha ha!", "Stop it! Haha!"];
+        const emojis = ['⭐', '💫', '✨', '🌟', '💥', '❤️', '💛', '💚', '💙', '💜'];
+
+        tapZones.forEach(id => {
+            document.getElementById(id).addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleTap(e.touches[0].clientX, e.touches[0].clientY);
+            });
+        });
+
+        function handleTap(x, y) {
+            if(currentState !== AppState.IDLE) return;
+            
+            vibrate(70);
+            showStatus(tickleMessages[Math.floor(Math.random() * tickleMessages.length)]);
+            
+            // Shake effect
+            const container = document.querySelector('.video-container');
+            container.classList.add('shake');
+            setTimeout(() => container.classList.remove('shake'), 500);
+
+            // Particles
+            for(let i = 0; i < 8; i++) {
+                createParticle(x, y);
+            }
+        }
+
+        function createParticle(x, y) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 1500);
+        }
+
+        function createRipple(e) {
+            const btn = e.currentTarget;
+            const ripple = document.createElement('span');
+            const rect = btn.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size/2;
+            const y = e.clientY - rect.top - size/2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.className = 'ripple';
+            btn.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        /**
+         * BUTTON ACTIONS
+         */
+
+        // 1. LAUGH BUTTON
+        document.getElementById('laugh-btn').addEventListener('click', () => {
+            if(currentState !== AppState.IDLE) return;
+            vibrate();
+            startSequence(AppState.LAUGHING, 'laugh', 'audio-laugh', 'Ha ha ha ha!', '😂');
+        });
+
+        // 2. MUSIC BUTTON
+        document.getElementById('music-btn').addEventListener('click', () => {
+            if(currentState !== AppState.IDLE) return;
+            vibrate();
+            startSequence(AppState.MUSIC, 'music', 'audio-music', "Let's dance!", '🎵');
+        });
+
+        function startSequence(state, videoKey, audioId, msg, emoji) {
+            switchState(state);
+            showStatus(msg);
+            
+            const audio = document.getElementById(audioId);
+            audioPlayCount = 0;
+            
+            const playTwice = () => {
+                audioPlayCount++;
+                if(audioPlayCount <= 2) {
+                    audio.currentTime = 0;
+                    audio.play();
+                } else {
+                    audio.removeEventListener('ended', playTwice);
+                    switchState(AppState.IDLE);
+                }
+            };
+
+            audio.addEventListener('ended', playTwice);
+            playTwice();
+            spawnFallingEmojis(emoji);
+        }
+
+        function spawnFallingEmojis(char) {
+            for(let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const e = document.createElement('div');
+                    e.className = 'falling-emoji';
+                    e.innerText = char;
+                    e.style.left = Math.random() * 90 + 'vw';
+                    document.body.appendChild(e);
+                    setTimeout(() => e.remove(), 4000);
+                }, i * 200);
+            }
+        }
+
+        // 3. MIC / TALKING BUTTON
+        const micBtn = document.getElementById('mic-btn');
+        micBtn.addEventListener('click', () => {
+            if(currentState !== AppState.IDLE) return;
+            startRecording();
+        });
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+                });
+                
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = processVoice;
+
+                switchState(AppState.LISTENING);
+                showStatus("Listening...");
+                micBtn.classList.add('pulse-purple');
+                vibrate(100);
+
+                mediaRecorder.start();
+
+                // Stop after 5 seconds
+                setTimeout(() => {
+                    if(mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                }, 5000);
+
+            } catch (err) {
+                console.error("Mic error:", err);
+                showStatus("Mic error!");
+            }
+        }
+
+        function processVoice() {
+            micBtn.classList.remove('pulse-purple');
+            micBtn.classList.add('glow-yellow');
+            switchState(AppState.TALKING);
+            showStatus("Rabbit speaking...");
+
+            const blob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
+            const audioUrl = URL.createObjectURL(blob);
+            const audio = new Audio(audioUrl);
+            
+            // Web Audio API for pitch shifting (simulated by playbackRate)
+            audio.playbackRate = 1.5; 
+            
+            audio.onended = () => {
+                micBtn.classList.remove('glow-yellow');
+                switchState(AppState.IDLE);
+                showStatus("Rabbit is ready!");
+            };
+
+            audio.play();
+        }
+
+        /**
+         * NAVIGATION & EXIT
+         */
+        window.addEventListener('popstate', (e) => {
+            if (currentState !== AppState.WELCOME) {
+                document.getElementById('exit-overlay').style.display = 'flex';
+                // Push again to prevent actual back
+                window.history.pushState({page: 'main'}, 'Main');
+            }
+        });
+
+        document.getElementById('exit-no').addEventListener('click', () => {
+            document.getElementById('exit-overlay').style.display = 'none';
+        });
+
+        document.getElementById('exit-yes').addEventListener('click', () => {
+            location.reload(); // Simplest way to return to welcome/reset
+        });
+
+        // Prevent double tap zoom
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+    </script>
+</body>
+</html>
